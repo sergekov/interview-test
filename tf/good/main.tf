@@ -32,60 +32,19 @@ resource "aws_route" "internet_access" {
   gateway_id             = "${aws_internet_gateway.interview_prod_gw.id}"
 }
 
-#resource "aws_route_table" "test_public" {
-#  vpc_id = "${aws_vpc.default.id}"
-
-#  route {
-#      cidr_block = "0.0.0.0/0"
-#      gateway_id = "${aws_internet_gateway.interview_prod_gw.id}"
-#  }
-#  tags { Name = "${var.name}.${element(split(",", var.availability_zones, count.index)}" }
-#}
-
-#resource "aws_route_table_association" "interview_public" {
-#  count          = "${length(split(",", var.public_subnet_cidr))}"
-#  subnet_id      = "${element(aws_subnet.interview_public.*.id, count.index)}"
-#  route_table_id = "${aws_route_table.public.id}"
-#}
-
-
-#resource "aws_route_table" "private" {
-#  vpc_id = "${var.vpc_id}"
-
-#  route {
-#      cidr_block = "0.0.0.0/0"
-#      gateway_id = "${aws_nat_gateway.nat-gw.id}"
-#  }
-#  tags { Name = "${var.name}.${element(split(",", var.availability_zones, count.index)}" }
-#}
-
-#resource "aws_route_table_association" "private" {
-#  count          = "${length(split(",", var.private_subnet_cidr))}"
-#  subnet_id      = "${element(aws_subnet.interview_private.*.id, count.index)}"
-#  route_table_id = "${aws_route_table.private.id}"
-#}
-
-resource "aws_subnet" "elb_public" {
-  vpc_id                  = "${aws_vpc.default.id}"
-  cidr_block              = "${element(split(",", var.public_mgmt_cidr), count.index)}"
-  availability_zone       = "${element(split(",", var.availability_zones), count.index)}"
-  count                   = "${length(split(",", var.public_mgmt_cidr))}"
-  map_public_ip_on_launch = true
-
-  lifecycle {
-    create_before_destroy = true
-  }
-
-  tags {
-    Name = "${var.name.public}.${element(split(",", var.availability_zones), count.index)}"
-  }
+# Grant the private subnets internet access on via NAT instance
+resource "aws_route" "internet_access_nat" {
+  route_table_id         = "${aws_vpc.default.main_route_table_id}"
+  destination_cidr_block = "0.0.0.0/0"
+  gateway_id             = "${aws_nat_gateway.nat-gw.id}"
 }
+
 
 resource "aws_subnet" "interview_public" {
   vpc_id                  = "${aws_vpc.default.id}"
   cidr_block              = "${element(split(",", var.public_subnet_cidr), count.index)}"
   availability_zone       = "${element(split(",", var.availability_zones), count.index)}"
-  count                   = "${length(split(",", var.public_subnet_cidr))}"
+  count                   = "${length(split(",", var.cidrs))}"
   map_public_ip_on_launch = true
 
   lifecycle {
@@ -97,19 +56,77 @@ resource "aws_subnet" "interview_public" {
   }
 }
 
-resource "aws_subnet" "interview_private" {
+
+# Create a subnet to launch our instances into
+#resource "aws_subnet" "interview_prod_web_a" {
+#  vpc_id                  = "${aws_vpc.default.id}"
+#  availability_zone       = "ap-southeast-2a"
+#  cidr_block              = "10.0.1.0/24"
+#  map_public_ip_on_launch = true
+
+#  lifecycle {
+#    create_before_destroy = true
+#  }
+
+#}
+
+
+#resource "aws_subnet" "interview_prod_web_b" {
+#  vpc_id                  = "${aws_vpc.default.id}"
+#  cidr_block              = "10.0.2.0/24"
+#  availability_zone       = "ap-southeast-2b"
+#  map_public_ip_on_launch = true
+
+#  lifecycle {
+#    create_before_destroy = true
+#  }
+
+#}
+
+resource "aws_subnet" "interview_prod_web_c" {
   vpc_id                  = "${aws_vpc.default.id}"
-  cidr_block              = "${element(split(",", var.private_subnet_cidr), count.index)}"
-  availability_zone       = "${element(split(",", var.availability_zones), count.index)}"
-  count                   = "${length(split(",", var.private_subnet_cidr))}"
+  cidr_block              = "10.0.3.0/24"
+  availability_zone       = "ap-southeast-2c"
   map_public_ip_on_launch = true
 
   lifecycle {
     create_before_destroy = true
   }
 
-  tags {
-    Name = "${var.name.private}.${element(split(",", var.availability_zones), count.index)}"
+}
+
+
+
+resource "aws_subnet" "interview_prod_app_a" {
+  vpc_id                  = "${aws_vpc.default.id}"
+  availability_zone       = "ap-southeast-2a"
+  cidr_block              = "10.0.101.0/24"
+  map_public_ip_on_launch = false
+
+  lifecycle {
+    create_before_destroy = true
+  }
+}
+
+resource "aws_subnet" "interview_prod_app_b" {
+  vpc_id                  = "${aws_vpc.default.id}"
+  availability_zone       = "ap-southeast-2b"
+  cidr_block              = "10.0.102.0/24"
+  map_public_ip_on_launch = false
+
+  lifecycle {
+    create_before_destroy = true
+  }
+}
+
+resource "aws_subnet" "interview_prod_app_c" {
+  vpc_id                  = "${aws_vpc.default.id}"
+  availability_zone       = "ap-southeast-2a"
+  cidr_block              = "10.0.103.0/24"
+  map_public_ip_on_launch = false
+
+  lifecycle {
+    create_before_destroy = true
   }
 }
 
@@ -119,10 +136,10 @@ resource "aws_elb" "web-elb" {
   # vpc_id = "${aws_vpc.default.id}"
 
   # The same availability zone as our instances
-  # availability_zones = ["${split(",", var.availability_zones)}"]
+  #availability_zones = ["${split(",", var.availability_zones)}"]
   # availability_zones = [ "ap-southeast-2a", "ap-southeast-2b", "ap-southeast-2c" ]
+  # subnets = [ "${aws_subnet.interview_prod_web_a.id}", "${aws_subnet.interview_prod_web_b.id}", "${aws_subnet.interview_prod_web_c.id}" ]
   subnets = [ "${element(aws_subnet.interview_public.*.id, count.index)}" ]
-  # subnets = [ "${aws_subnet.elb_public.id}" ]
   listener {
     instance_port = 80
     instance_protocol = "http"
@@ -138,15 +155,11 @@ resource "aws_elb" "web-elb" {
     interval = 30
   }
 
-  cross_zone_load_balancing = true
-  idle_timeout = 400
-  connection_draining = true
-  connection_draining_timeout = 400
-
 }
 
 resource "aws_autoscaling_group" "web-asg" {
   # availability_zones = ["${split(",", var.availability_zones)}"]
+  # availability_zones = [ "ap-southeast-2a", "ap-southeast-2b", "ap-southeast-2c" ]
   name = "web-asg-resource"
   max_size = "${var.asg_max}"
   min_size = "${var.asg_min}"
@@ -157,7 +170,7 @@ resource "aws_autoscaling_group" "web-asg" {
   # force_delete = 
   launch_configuration = "${aws_launch_configuration.web-lc.name}"
   load_balancers = ["${aws_elb.web-elb.name}"]
-  vpc_zone_identifier = ["${aws_subnet.interview_public.*.id}"]
+  vpc_zone_identifier = ["${aws_subnet.interview_prod_web_a.*.id}", "${aws_subnet.interview_prod_web_b.*.id}", "${aws_subnet.interview_prod_web_c.*.id}"]
   tag {
     key = "Name"
     value = "web-asg"
@@ -168,6 +181,7 @@ resource "aws_autoscaling_group" "web-asg" {
 
 resource "aws_autoscaling_group" "app-asg" {
   # availability_zones = ["${split(",", var.availability_zones)}"]
+  # availability_zones = [ "ap-southeast-2a", "ap-southeast-2b", "ap-southeast-2c" ]
   name = "app-asg-resource"
   max_size = "${var.asg_max}"
   min_size = "${var.asg_min}"
@@ -178,7 +192,7 @@ resource "aws_autoscaling_group" "app-asg" {
   # force_delete = 
   launch_configuration = "${aws_launch_configuration.app-lc.name}"
   # load_balancers = ["${aws_elb.web-elb.name}"]
-  vpc_zone_identifier = [ "${element(aws_subnet.interview_private.*.id, count.index)}" ]
+  vpc_zone_identifier = ["${aws_subnet.interview_prod_app_a.*.id}", "${aws_subnet.interview_prod_app_b.*.id}", "${aws_subnet.interview_prod_app_c.*.id}"]
   tag {
     key = "Name"
     value = "app-asg"
@@ -207,8 +221,6 @@ resource "aws_launch_configuration" "app-lc" {
   key_name = "${var.key_name}"
 }
 
-
-
 # Our default security group to access
 # the instances over SSH and HTTP
 resource "aws_security_group" "web-sg" {
@@ -229,7 +241,7 @@ resource "aws_security_group" "web-sg" {
     from_port   = 80
     to_port     = 80
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = ["10.0.0.0/16"]
   }
 
   # outbound internet access
@@ -239,7 +251,6 @@ resource "aws_security_group" "web-sg" {
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
-
 }
 
 resource "aws_security_group" "app-sg" {

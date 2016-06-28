@@ -24,7 +24,7 @@ variable "aws_amis" {
 #    ap-southeast-2 = "ami-91c7eff2"
 #    ap-southeast-2 = "ami-bd523087"
      ap-southeast-2 = "ami-d9d7f9ba"
-#    ap-southeast-2c = "ami-bd523087"
+#    ap-southeast-2 = "ami-bd523087"
   }
 }
 
@@ -38,8 +38,8 @@ variable "name" {
 }
 
 variable "availability_zones" {
-  default = "ap-southeast-2a, ap-southeast-2b"
-  description = "Availability zones for aout web application"
+  default = "ap-southeast-2a,ap-southeast-2b,ap-southeast-2c"
+  description = "Availability zones for the web application"
 }
 
 variable "subnet_azs" {
@@ -54,12 +54,17 @@ variable "cidrs" {
 
 variable "public_subnet_cidr" {
     description = "CIDR for the Public Subnet"
-    default = "10.0.1.0/24, 10.0.2.0/24, 10.0.3.0/24"
+    default = "10.0.1.0/24,10.0.2.0/24,10.0.3.0/24"
 }
 
 variable "private_subnet_cidr" {
     description = "CIDR for the Private Subnet"
-    default = "10.1.1.0/24, 10.1.2.0/24, 10.1.3.0/24"
+    default = "10.0.101.0/24,10.0.102.0/24,10.0.103.0/24"
+}
+
+variable "public_mgmt_cidr" {
+    description = "CIDR for the Private Subnet"
+    default = "10.0.51.0/24"
 }
 
 variable "instance_type" {
@@ -79,5 +84,5 @@ variable "asg_max" {
 
 variable "asg_desired" {
   description = "Desired numbers of servers in ASG"
-  default = "1"
+  default = "2"
 }

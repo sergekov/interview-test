@@ -11,13 +11,21 @@ output "address" {
 #}
 
 
-output "subnet_ids_web" {
-  value = "${join(",", aws_subnet.interview_prod_web.*.id)}"
-}
-
-#output "subnet_ids_app" {
-#  value = "${join(",", aws_subnet.interview_prod_app.*.id)}"
+#output "subnet_ids_web_a" {
+#  value = "${join(",", aws_subnet.interview_prod_web_a.*.id)}"
 #}
+
+#output "subnet_ids_web_a" {
+#  value = "${join(",", aws_subnet.interview_prod_web_b.*.id)}"
+#}
+
+#output "subnet_ids_web_c" {
+#  value = "${join(",", aws_subnet.interview_prod_web_c.*.id)}"
+#}
+
+output "subnet_ids_app" {
+  value = "${join(",", aws_subnet.interview_public.*.id)}"
+}
 
 output "security_group" {
   value = "${aws_security_group.web-sg.id}"
